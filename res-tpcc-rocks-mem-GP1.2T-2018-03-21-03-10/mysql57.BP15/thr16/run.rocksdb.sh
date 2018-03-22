@@ -54,19 +54,18 @@ collect_dstat_stats(){
 
 
 # cycle by buffer pool size
-RUNDIR=res-tpcc-rocks-tables-GP1.2T-`date +%F-%H-%M`
+RUNDIR=res-tpcc-rocks-mem-GP1.2T-`date +%F-%H-%M`
 
 #for BP in 100 90 80 70 60 50 40 30 20 10 5
-for BP in 25
+for BP in 25 20 15 10 5
 do
-#tables=10
+tables=10
 
-for tables in 10 5 3 2 1 
+#for tables in 10 5 3 2 1 
 
-#for i in 16
+for i in 16
 #for i in 1 2 4 8 16 32 64 128 256 512
 do
-i=16
 
 #dyni -stop
 echo "Restoring backup"
@@ -88,7 +87,7 @@ runid="mysql57.BP$BP"
 # perform warmup
 #for i in  56
 
-        OUTDIR=$RUNDIR/$runid/tables$tables
+        OUTDIR=$RUNDIR/$runid/thr$i
         mkdir -p $OUTDIR
 
         # start stats collection

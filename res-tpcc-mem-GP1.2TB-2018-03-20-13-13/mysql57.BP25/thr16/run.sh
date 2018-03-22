@@ -2,7 +2,7 @@ HOST="--mysql-socket=/tmp/mysql.sock"
 #HOST="--mysql-host=127.0.0.1"
 MYSQLDIR=/home/vadim/Percona-Server-5.7.21-20-Linux.x86_64.ssl100
 DATADIR=/data1/mysql
-CONFIG=cnf/my-rocks.cnf
+CONFIG=cnf/my.cnf
 
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
@@ -11,7 +11,7 @@ startmysql(){
   sysctl -q -w vm.drop_caches=3
   echo 3 > /proc/sys/vm/drop_caches
   ulimit -n 1000000
-  numactl --interleave=all $MYSQLDIR/bin/mysqld --defaults-file=$CONFIG --basedir=$MYSQLDIR --user=root --rocksdb_block_cache_size=${BP}G --datadir=$DATADIR &
+  numactl --interleave=all $MYSQLDIR/bin/mysqld --defaults-file=$CONFIG --basedir=$MYSQLDIR --user=root --innodb_buffer_pool_size=${BP}G --datadir=$DATADIR &
 }
 
 shutdownmysql(){
@@ -54,24 +54,22 @@ collect_dstat_stats(){
 
 
 # cycle by buffer pool size
-RUNDIR=res-tpcc-rocks-tables-GP1.2T-`date +%F-%H-%M`
+RUNDIR=res-tpcc-mem-GP1.2TB-`date +%F-%H-%M`
 
 #for BP in 100 90 80 70 60 50 40 30 20 10 5
-for BP in 25
+for BP in 25 20 15 10 5
 do
-#tables=10
+tables=10
+#for tables in 10 5 3 2 1 
 
-for tables in 10 5 3 2 1 
-
-#for i in 16
+for i in 16
 #for i in 1 2 4 8 16 32 64 128 256 512
 do
-i=16
 
 #dyni -stop
 echo "Restoring backup"
 rm -fr /data1/mysql
-cp -r /data/mysql.rocksdb /data1/mysql
+cp -r /data/mysql.back /data1/mysql
 
 startmysql &
 sleep 10
@@ -88,7 +86,7 @@ runid="mysql57.BP$BP"
 # perform warmup
 #for i in  56
 
-        OUTDIR=$RUNDIR/$runid/tables$tables
+        OUTDIR=$RUNDIR/$runid/thr$i
         mkdir -p $OUTDIR
 
         # start stats collection
@@ -97,7 +95,7 @@ runid="mysql57.BP$BP"
 
 
         time=3600
-        ./tpcc.lua --mysql-socket=/tmp/mysql.sock --mysql-user=root --mysql-db=sbrocks --time=3600 --threads=$i --report-interval=1 --tables=$tables --scale=100 --use_fk=0 --db-driver=mysql --trx_level=RC  run |  tee -a $OUTDIR/res.txt
+        ./tpcc.lua --mysql-socket=/tmp/mysql.sock --mysql-user=root --mysql-db=sbinno --time=3600 --threads=$i --report-interval=1 --tables=$tables --scale=100 --use_fk=0 --db-driver=mysql --trx_level=RC  run |  tee -a $OUTDIR/res.txt
 
         # kill stats
         set +e
